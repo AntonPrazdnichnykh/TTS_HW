@@ -194,13 +194,13 @@ class FFTransformer(nn.Module):
                     dropatt=dropatt, pre_lnorm=pre_lnorm)
             )
 
-    def forward(self, dec_inp, seq_lens=None, conditioning=0):
+    def forward(self, dec_inp, prom_inp=0, seq_lens=None, conditioning=0):
         if self.word_emb is None:
             inp = dec_inp
             mask = mask_from_lens(seq_lens).unsqueeze(2)
             prom_inp = 0
         else:
-            inp = self.word_emb(dec_inp)
+            inp = self.word_emb(dec_inp) + self.prom_emb(prom_inp) 
             # [bsz x L x 1]
             mask = (dec_inp != self.padding_idx).unsqueeze(2)
 

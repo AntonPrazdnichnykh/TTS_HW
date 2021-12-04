@@ -255,10 +255,10 @@ class FastPitch(nn.Module):
             spk_emb.mul_(self.speaker_emb_weight)
 
         # Input FFT
-        enc_out, enc_mask = self.encoder(inputs, conditioning=spk_emb)
+        enc_out, enc_mask = self.encoder(inputs, proms, conditioning=spk_emb)
 
         # Alignment
-        text_emb = self.encoder.word_emb(inputs)
+        text_emb = self.encoder.word_emb(inputs) # + self.encoder.prom_emb(proms)
 
         # make sure to do the alignments before folding
         attn_mask = mask_from_lens(input_lens)[..., None] == 0
@@ -312,7 +312,7 @@ class FastPitch(nn.Module):
             dur_tgt, enc_out, pace, mel_max_len)
 
         # Output FFT
-        dec_out, dec_mask = self.decoder(len_regulated, dec_lens)
+        dec_out, dec_mask = self.decoder(len_regulated, seq_lens=dec_lens)
         mel_out = self.proj(dec_out)
         return (mel_out, dec_mask, dur_pred, log_dur_pred, pitch_pred,
                 pitch_tgt, energy_pred, energy_tgt, attn_soft, attn_hard,
@@ -331,7 +331,7 @@ class FastPitch(nn.Module):
             spk_emb.mul_(self.speaker_emb_weight)
 
         # Input FFT
-        enc_out, enc_mask = self.encoder(inputs, conditioning=spk_emb)
+        enc_out, enc_mask = self.encoder(inputs, proms, conditioning=spk_emb)
 
         # Predict durations
         log_dur_pred = self.duration_predictor(enc_out, enc_mask).squeeze(-1)
@@ -371,7 +371,7 @@ class FastPitch(nn.Module):
             dur_pred if dur_tgt is None else dur_tgt,
             enc_out, pace, mel_max_len=None)
 
-        dec_out, dec_mask = self.decoder(len_regulated, dec_lens)
+        dec_out, dec_mask = self.decoder(len_regulated, seq_lens=dec_lens)
         mel_out = self.proj(dec_out)
         # mel_lens = dec_mask.squeeze(2).sum(axis=1).long()
         mel_out = mel_out.permute(0, 2, 1)  # For inference.py
